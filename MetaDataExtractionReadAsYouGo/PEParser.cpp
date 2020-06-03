@@ -125,7 +125,7 @@
     }
 
 	bool PEParser::getResourceSection(
-		resource_section_info_t& pResourceSection)
+		resource_section_info_t& pResourceSection) const
 	{
 		auto success{ false };
 
@@ -321,7 +321,7 @@
 
     bool PEParser::parseVersionInfo(
 		const resource_section_info_t& pResourceSection,
-		version_values_t& vi)
+		version_values_t& vi) const
     {
 		auto found{ false };
 		if (vi.empty())

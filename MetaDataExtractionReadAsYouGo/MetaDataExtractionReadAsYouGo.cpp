@@ -1,33 +1,9 @@
 // MetadataExtractorC++.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
-
 #include <iostream>
 #include "MetadataExtractionReadAsYouGo.h"
 
-
 /********************* MetadataEx ******************/
-bool MetadataEx::searchVersionInfoByName(
-	const version_values_t& versionInfo,
-	const std::wstring& key,
-	std::wstring& value)
-{
-	auto found{ false };
-	for (auto i : versionInfo)
-	{
-		if (wcsncmp(i.first.c_str(), key.c_str(), key.size()) == 0)
-		{
-			value = i.second;
-			found = true;
-		}
-	}
-
-	if (!found)
-	{
-		std::wcout << "Resource value " << key << " not found in VS_VERSIONINFO.\n";
-	}
-	return found;
-}
-
 bool MetadataEx::getVersionInformation(
 	versionInformationMap& entity)
 {
@@ -82,6 +58,6 @@ bool MetadataEx::getVersionInformation(
 
 		entity.emplace(ITEM_ID_VERSION_RESOURCE_SUBSYSTEM, std::to_wstring(subsystem));
 	}
-out:
+
 	return ret;
 }

@@ -31,11 +31,15 @@
 		DWORD dataBufferSize;
 	} resource_section_info_t;
 
-
 using version_value_t = std::pair<std::wstring, std::wstring>;
 using version_values_t = std::vector<version_value_t>;
 
-#define ALIGN_32BIT_BOUNDRY(i)		(i) = ((i) + 0x3) & (~0x3)
+template <typename intT>
+static constexpr void ALIGN_32BIT_BOUNDRY(intT& i)
+{
+	i = (i + 0x3) & (~0x3);
+}
+
 #define VERINFO_PARSE_ERR           "VersionInfo parse error: "
 #define PE_PARSE_ERR				"Not a valid PE: "
 
@@ -49,6 +53,19 @@ using version_values_t = std::vector<version_value_t>;
 #define VAR_FILE_INFO_STRING_LEN    sizeof (VAR_FILE_INFO_STRING)/sizeof(wchar_t)
 
 #define ENG_LANG_CODE_STRING        (L"09")
+
+#if 0
+static constexpr const char* VERINFO_PARSE_ERR = "VersionInfo parse error: ";
+static constexpr const char* PE_PARSE_ERR = "Not a valid PE: ";
+static constexpr const wchar_t* VS_VERSION_STRING = L"VS_VERSION_INFO";
+static constexpr const wchar_t* FILE_INFO_STRING = L"StringFileInfo";
+static constexpr const wchar_t* VAR_FILE_INFO_STRING = L"VarFileInfo";
+static constexpr const wchar_t* ENG_LANG_CODE_STRING = L"09";
+
+#define VS_VERSION_STRING_LEN		(sizeof (VS_VERSION_STRING))/sizeof(wchar_t)
+#define FILE_INFO_STRING_LEN		sizeof (FILE_INFO_STRING)/sizeof(wchar_t)
+#define VAR_FILE_INFO_STRING_LEN    sizeof (VAR_FILE_INFO_STRING)/sizeof(wchar_t)
+#endif
 
 #define SEEK_AND_READ(offset,buf,type,num,success)\
 do{\
@@ -122,18 +139,15 @@ do{\
 
             bool parseVersionInfo(
 				const resource_section_info_t& pResourceSection,
-				version_values_t& vi);
+				version_values_t& vi) const;
 
 			const uint32_t getSubsystem() const;
 
         private:
-            static constexpr DWORD BUF_SIZE = (8 * 1024); // 8k
-			static constexpr uint32_t MAX_NUM_SECTIONS = 100;
+            static constexpr uint32_t MAX_NUM_SECTIONS = 100;
 			static constexpr uint32_t MAX_NUM_DATA_DIRECTORIES = 20;
 			static constexpr uint32_t MAX_NUM_SUBSYSTEMS = 20;
-
-
-
+					   
             std::string m_fileName;
             PEfileType m_flags;
             uint32_t m_numSections;
@@ -145,11 +159,11 @@ do{\
 
 			std::unique_ptr<IMAGE_DOS_HEADER[]> m_spDosHdr; /* Dos header */
 			std::unique_ptr<IMAGE_NT_HEADERS[]> m_spPeHdr;  /* PE header */
-			IMAGE_NT_HEADERS32* m_pNtHdr32;				/* Nt header 32-bit */
-            IMAGE_NT_HEADERS64* m_pNtHdr64;				/* Nt header 64-bit */
-            IMAGE_FILE_HEADER* m_pFileHdr;				/* File header */
-            IMAGE_OPTIONAL_HEADER32* m_pOptionalHdr32;	/* Optional header 32 bit*/
-            IMAGE_OPTIONAL_HEADER64* m_pOptionalHdr64;	/* Optional header 64 bit */
+			IMAGE_NT_HEADERS32* m_pNtHdr32;				    /* Nt header 32-bit */
+            IMAGE_NT_HEADERS64* m_pNtHdr64;				    /* Nt header 64-bit */
+            IMAGE_FILE_HEADER* m_pFileHdr;				    /* File header */
+            IMAGE_OPTIONAL_HEADER32* m_pOptionalHdr32;	    /* Optional header 32 bit*/
+            IMAGE_OPTIONAL_HEADER64* m_pOptionalHdr64;	    /* Optional header 64 bit */
 			std::unique_ptr<IMAGE_SECTION_HEADER[]> m_spSectionTable; /* Section table */
             
         private:
@@ -160,7 +174,7 @@ do{\
 				T_IMAGE_OPTIONAL_HEADER& pOptionalHdr);
 
 			bool getResourceSection(
-				resource_section_info_t& pResourceSection);
+				resource_section_info_t& pResourceSection) const;
     };
 //}
 
