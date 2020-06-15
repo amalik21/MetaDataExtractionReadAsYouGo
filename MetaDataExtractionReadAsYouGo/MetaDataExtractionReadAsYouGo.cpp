@@ -14,16 +14,16 @@ bool MetadataEx::getVersionInformation(
 	try
 	{
 		resource_section_info_t resourceSectionInfo{};
-		PEParser parser;
 
+
+		std::cout << "Parsing file: " << m_file.getName() << " ==> " << std::endl;
 		ret = m_file.open();
 		CHECK_RET_CODE(ret, "openFile failed");
 		
-		ret = ret && parser.parse(m_file.getName(),
+		PEParser parser(m_file.getName(),
 			std::bind(&File::seekStart, &m_file, std::placeholders::_1),
 			std::bind(&File::read, &m_file, std::placeholders::_1, std::placeholders::_2));
-		CHECK_RET_CODE(ret, "parsing PE header failed");
-
+		
 		ret = ret && parser.parseResourceDir(RT_VERSION, resourceSectionInfo);
 		CHECK_RET_CODE(ret, "parseResourceDir failed");
 

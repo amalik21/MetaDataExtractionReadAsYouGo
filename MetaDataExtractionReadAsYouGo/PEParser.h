@@ -4,12 +4,13 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
+#include <variant>
 #include <functional>
 #include "File.h"
 
 //namespace uc
 //{
-    enum PEfileType
+    enum class PEfileType
     {
         PE_TYPE_NONE  = 0x0,
         PE_TYPE_32BIT = 0x1,
@@ -18,7 +19,7 @@
 
     typedef struct
     {
-		std::unique_ptr<IMAGE_RESOURCE_DIRECTORY[]> spDir;
+		IMAGE_RESOURCE_DIRECTORY spDir;
 		std::shared_ptr<IMAGE_RESOURCE_DIRECTORY_ENTRY> spEntry;
     }resource_tree_level_t;
 
@@ -33,6 +34,7 @@
 
 using version_value_t = std::pair<std::wstring, std::wstring>;
 using version_values_t = std::vector<version_value_t>;
+using optionalHeader = std::variant<IMAGE_OPTIONAL_HEADER32*, IMAGE_OPTIONAL_HEADER64*>;
 
 template <typename intT>
 static constexpr void ALIGN_32BIT_BOUNDRY(intT& i)
@@ -53,25 +55,19 @@ static constexpr void ALIGN_32BIT_BOUNDRY(intT& i)
 #define VAR_FILE_INFO_STRING_LEN    sizeof (VAR_FILE_INFO_STRING)/sizeof(wchar_t)
 
 #define ENG_LANG_CODE_STRING        (L"09")
-
-#if 0
-static constexpr const char* VERINFO_PARSE_ERR = "VersionInfo parse error: ";
-static constexpr const char* PE_PARSE_ERR = "Not a valid PE: ";
-static constexpr const wchar_t* VS_VERSION_STRING = L"VS_VERSION_INFO";
-static constexpr const wchar_t* FILE_INFO_STRING = L"StringFileInfo";
-static constexpr const wchar_t* VAR_FILE_INFO_STRING = L"VarFileInfo";
-static constexpr const wchar_t* ENG_LANG_CODE_STRING = L"09";
-
-#define VS_VERSION_STRING_LEN		(sizeof (VS_VERSION_STRING))/sizeof(wchar_t)
-#define FILE_INFO_STRING_LEN		sizeof (FILE_INFO_STRING)/sizeof(wchar_t)
-#define VAR_FILE_INFO_STRING_LEN    sizeof (VAR_FILE_INFO_STRING)/sizeof(wchar_t)
-#endif
+#define ENG_LANG_CODE_STRING_LEN	(sizeof (ENG_LANG_CODE_STRING)-sizeof(wchar_t))/sizeof(wchar_t)
 
 #define SEEK_AND_READ(offset,buf,type,num,success)\
 do{\
     m_pSeek(offset);\
     buf = std::make_unique<type[]>(num);\
     success = m_pRead((BYTE*)buf.get(), sizeof(type)*num);\
+}while(0)
+
+#define SEEK_AND_READ1(offset,buf,type,num,success)\
+do{\
+    m_pSeek(offset);\
+    success = m_pRead((BYTE*)&buf, sizeof(type)*num);\
 }while(0)
 
 #define SEEK_AND_READ_SHARED(offset,buf,type,num,success)\
@@ -126,9 +122,7 @@ do{\
 			using pSeek_t = std::function<bool(long)>;
 			using pRead_t = std::function<bool(void*, const DWORD)>;
 
-			PEParser();
-
-           	bool parse(
+			PEParser(
 				const std::string& fileName,
 				pSeek_t pSeek,
 				pRead_t pRead);
@@ -157,21 +151,15 @@ do{\
 			pSeek_t  m_pSeek;
 			pRead_t  m_pRead;
 
-			std::unique_ptr<IMAGE_DOS_HEADER[]> m_spDosHdr; /* Dos header */
-			std::unique_ptr<IMAGE_NT_HEADERS[]> m_spPeHdr;  /* PE header */
-			IMAGE_NT_HEADERS32* m_pNtHdr32;				    /* Nt header 32-bit */
-            IMAGE_NT_HEADERS64* m_pNtHdr64;				    /* Nt header 64-bit */
-            IMAGE_FILE_HEADER* m_pFileHdr;				    /* File header */
-            IMAGE_OPTIONAL_HEADER32* m_pOptionalHdr32;	    /* Optional header 32 bit*/
-            IMAGE_OPTIONAL_HEADER64* m_pOptionalHdr64;	    /* Optional header 64 bit */
-			std::unique_ptr<IMAGE_SECTION_HEADER[]> m_spSectionTable; /* Section table */
+			IMAGE_DOS_HEADER m_spDosHdr;                                /* Dos header */
+			IMAGE_NT_HEADERS m_spPeHdr;                                 /* PE header */
+            IMAGE_FILE_HEADER* m_pFileHdr;				                /* File header */
+			optionalHeader m_pOptionalHdr;                              /* Optional Header */
+			std::unique_ptr<IMAGE_SECTION_HEADER[]> m_spSectionTable;   /* Section table */
             
         private:
-			template <typename T_IMAGE_NT_HEADER, typename T_IMAGE_OPTIONAL_HEADER>
-			bool parsePeFileType(
-				const PEfileType PEfileTypeFlags,
-				T_IMAGE_NT_HEADER& pNtHdr,
-				T_IMAGE_OPTIONAL_HEADER& pOptionalHdr);
+			void parsePeFileType(
+				const PEfileType PEfileTypeFlags);
 
 			bool getResourceSection(
 				resource_section_info_t& pResourceSection) const;
